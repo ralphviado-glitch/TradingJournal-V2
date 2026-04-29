@@ -1,0 +1,56 @@
+body {
+  margin: 0;
+  background-color: #0b0b0b;
+  color: #ffffff;
+  font-family: Arial, sans-serif;
+}
+
+.app {
+  min-height: 100vh;
+}
+
+.app-header {
+  text-align: center;
+  padding: 32px 16px 16px;
+}
+
+.dashboard {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.dashboard-section {
+  margin-bottom: 32px;
+}
+
+.stats-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.stat-card {
+  border: 1px solid #333;
+  border-radius: 10px;
+  padding: 16px;
+  min-width: 160px;
+  background-color: #111;
+}
+
+.trade-table-wrapper {
+  margin-top: 24px;
+  overflow-x: auto;
+}
+
+.trade-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.trade-table th,
+.trade-table td {
+  border: 1px solid #333;
+  padding: 8px;
+  text-align: left;
+}

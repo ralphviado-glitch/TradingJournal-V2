@@ -245,29 +245,151 @@ export function getBestTimeOfDay(trades = []) {
 }
 
 export function generatePlainEnglishInsights(trades = []) {
-  if (!trades || trades.length === 0) {
-    return ["Upload trades to generate insights."];
-  }
+    if (!trades || trades.length === 0) {
+      return ["Upload trades to generate insights."];
+    }
 
-  const stats = calculateStats(trades);
-  const insights = [];
+    const stats = calculateStats(trades);
+    const setupStats = buildStatsBySetup(trades);
+    const tickerStats = buildStatsByTicker(trades);
 
-  insights.push(
-    `You took ${stats.totalTrades} trades with a ${stats.winRate}% win rate.`
-  );
+    const insights = [];
 
-  insights.push(
-    `Your total PnL is $${stats.totalPnl}. Your average winner is $${stats.averageWinner}, while your average loser is $${stats.averageLoser}.`
-  );
+    insights.push(
+      `You took ${stats.totalTrades} trades with a ${stats.winRate}% win rate and total PnL of $${stats.totalPnl}.`
+    );
 
-  if (stats.averageWinner > Math.abs(stats.averageLoser)) {
-    insights.push("Your winners are larger than your losers. This is a good sign.");
-  } else {
-    insights.push("Your losers are larger than your winners. You may need tighter risk control.");
-  }
+    if (stats.payoffRatio !== "N/A") {
+      insights.push(
+        `Your realized RRR is ${stats.payoffRatio}. This means your average winner is ${stats.payoffRatio}x your average loser.`
+      );
+    }
 
-  insights.push(`Your best stock is ${stats.bestStock}.`);
-  insights.push(`Your worst stock is ${stats.worstStock}.`);
+    if (stats.averageWinner > Math.abs(stats.averageLoser)) {
+      insights.push("Your average winner is larger than your average loser. This is a strong sign.");
+    } else {
+      insights.push("Your average loser is larger than your average winner. Focus on cutting losses faster.");
+    }
 
-  return insights;
+    const bestSetup = [...setupStats].sort((a, b) => b.totalPnl - a.totalPnl)[0];
+    const worstSetup = [...setupStats].sort((a, b) => a.totalPnl - b.totalPnl)[0];
+
+    if (bestSetup) {
+      insights.push(
+        `Your best setup is ${bestSetup.setup} with $${bestSetup.totalPnl} total PnL and a ${bestSetup.winRate}% win rate.`
+      );
+    }
+
+    if (worstSetup && worstSetup.setup !== bestSetup?.setup) {
+      insights.push(
+        `Your weakest setup is ${worstSetup.setup} with $${worstSetup.totalPnl} total PnL and a ${worstSetup.winRate}% win rate.`
+      );
+    }
+
+    const bestTicker = [...tickerStats].sort((a, b) => b.totalPnl - a.totalPnl)[0];
+    const worstTicker = [...tickerStats].sort((a, b) => a.totalPnl - b.totalPnl)[0];
+
+    if (bestTicker) {
+      insights.push(
+        `${bestTicker.ticker} is your strongest ticker with $${bestTicker.totalPnl} total PnL.`
+      );
+    }
+
+    if (worstTicker && worstTicker.ticker !== bestTicker?.ticker) {
+      insights.push(
+        `${worstTicker.ticker} is your weakest ticker with $${worstTicker.totalPnl} total PnL.`
+      );
+    }
+
+    if (stats.longestLosingStreak >= 3) {
+      insights.push(
+        `You had a ${stats.longestLosingStreak}-trade losing streak. Consider adding a daily stop or pause rule after repeated losses.`
+      );
+    }
+
+    if (stats.totalTrades >= 10 && stats.winRate < 40) {
+      insights.push(
+        "Your win rate is below 40%. Review whether your entries are too late or your setup criteria are too loose."
+      );
+    }
+
+    return insights;
+}
+
+export function buildStatsBySetup(trades = []) {
+  const setupMap = {};
+
+  trades.forEach((trade) => {
+    const setup = trade.setup || "Unclassified";
+    const pnl = Number(trade.pnl || 0);
+
+    if (!setupMap[setup]) {
+      setupMap[setup] = {
+        setup,
+        totalTrades: 0,
+        wins: 0,
+        losses: 0,
+        totalPnl: 0,
+      };
+    }
+
+    setupMap[setup].totalTrades += 1;
+    setupMap[setup].totalPnl += pnl;
+
+    if (pnl > 0) {
+      setupMap[setup].wins += 1;
+    }
+
+    if (pnl < 0) {
+      setupMap[setup].losses += 1;
+    }
+  });
+
+  return Object.values(setupMap).map((item) => ({
+    ...item,
+    winRate:
+      item.totalTrades === 0
+        ? 0
+        : Number(((item.wins / item.totalTrades) * 100).toFixed(1)),
+    totalPnl: Number(item.totalPnl.toFixed(2)),
+  }));
+}
+
+export function buildStatsByTicker(trades = []) {
+  const tickerMap = {};
+
+  trades.forEach((trade) => {
+    const ticker = trade.ticker || "Unknown";
+    const pnl = Number(trade.pnl || 0);
+
+    if (!tickerMap[ticker]) {
+      tickerMap[ticker] = {
+        ticker,
+        totalTrades: 0,
+        wins: 0,
+        losses: 0,
+        totalPnl: 0,
+      };
+    }
+
+    tickerMap[ticker].totalTrades += 1;
+    tickerMap[ticker].totalPnl += pnl;
+
+    if (pnl > 0) {
+      tickerMap[ticker].wins += 1;
+    }
+
+    if (pnl < 0) {
+      tickerMap[ticker].losses += 1;
+    }
+  });
+
+  return Object.values(tickerMap).map((item) => ({
+    ...item,
+    winRate:
+      item.totalTrades === 0
+        ? 0
+        : Number(((item.wins / item.totalTrades) * 100).toFixed(1)),
+    totalPnl: Number(item.totalPnl.toFixed(2)),
+  }));
 }

@@ -144,6 +144,7 @@ export function groupOrdersIntoTrades(orders = []) {
           ? -order.price * order.quantity
           : order.price * order.quantity,
         setup: "Unclassified",
+        notes: "",
         risk: 0,
         orders: [order],
         openQuantity: isBuy ? order.quantity : -order.quantity,

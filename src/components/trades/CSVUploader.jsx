@@ -2,7 +2,7 @@ import { useState } from "react";
 import Papa from "papaparse";
 import { parseTradesFromRows } from "../../lib/csv";
 
-function CSVUploader({ onDataUpload }) {
+function CSVUploader({ onDataUpload, onClearData }) {
   const [message, setMessage] = useState("");
 
   const handleFileUpload = (event) => {
@@ -27,7 +27,12 @@ function CSVUploader({ onDataUpload }) {
           setMessage(`Imported ${trades.length} trade${trades.length === 1 ? "" : "s"}.`);
         }
 
-        onDataUpload(trades);
+          const tradesWithIds = trades.map((trade, index) => ({
+          ...trade,
+          id: `${trade.date}-${trade.ticker}-${trade.entry_time}-${index}`,
+        }));
+
+        onDataUpload(tradesWithIds);
       },
       error: (error) => {
         console.error("Error parsing CSV:", error);
@@ -41,6 +46,9 @@ function CSVUploader({ onDataUpload }) {
       <h3>Upload Trades CSV</h3>
       <input type="file" accept=".csv" onChange={handleFileUpload} />
       {message ? <p>{message}</p> : null}
+      <button type="button" onClick={onClearData}>
+        Clear All Trades
+      </button>
     </div>
   );
 }
